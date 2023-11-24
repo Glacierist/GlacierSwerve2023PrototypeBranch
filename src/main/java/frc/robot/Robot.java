@@ -22,6 +22,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
+    m_swerve.resetModules();
 
   }
 
@@ -33,7 +34,6 @@ public class Robot extends TimedRobot {
     // this line or comment it out.
     // if (m_autonomousCommand != null) {
     //   m_autonomousCommand.cancel();
-    m_swerve.resetModules();
   }
   
   @Override
@@ -44,9 +44,11 @@ public class Robot extends TimedRobot {
   boolean started = false;
   @Override
   public void teleopPeriodic() {
+    if (m_controller.getBackButton() == true) {
+      m_swerve.resetModules();
+    }
     if (m_controller.getStartButton() == true) {
       started = true;
-      m_swerve.resetModules();
     }
     if (started == true) {
       driveWithJoystick(false);
@@ -59,7 +61,7 @@ public class Robot extends TimedRobot {
     // Get the x speed. We are inverting this because Xbox controllers return
     // negative values when we push forward. 
     final var xSpeed =
-        m_xspeedLimiter.calculate(MathUtil.applyDeadband(m_controller.getLeftY(), Constants.controllerLeftXDeadband))
+        m_xspeedLimiter.calculate(MathUtil.applyDeadband(-m_controller.getLeftY(), Constants.controllerLeftXDeadband))
             * Drivetrain.kMaxSpeed;
             SmartDashboard.putNumber("xSpeed ", xSpeed);
 
@@ -80,6 +82,6 @@ public class Robot extends TimedRobot {
             * Drivetrain.kMaxAngularSpeed;
             SmartDashboard.putNumber("yaw ", yaw);
 
-    m_swerve.drive(xSpeed, ySpeed, yaw, fieldRelative);
+    m_swerve.drive(-xSpeed, -ySpeed, yaw, fieldRelative);
   }
 }

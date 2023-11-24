@@ -88,19 +88,23 @@ public class SwerveModule {
    * @param desiredState Desired state with speed and angle.
    */
   public void setModuleState(SwerveModuleState desiredState, int module) {
-  // Optimize the reference state to avoid spinning further than 90 degrees
+    // Optimize the reference state to avoid spinning further than 90 degrees
     double moduleVelocity = desiredState.speedMetersPerSecond;
     double moduleAngle = desiredState.angle.getDegrees();
-      SmartDashboard.putNumber("moduleVelocity" + module, moduleVelocity);
-      SmartDashboard.putNumber("moduleAngle" + module, moduleAngle);
+    double optimizedModuleOutput[] = glacierOptimized(moduleAngle, getTurn180Angle(), moduleVelocity);
+      SmartDashboard.putNumber("moduleVelocity " + module, moduleVelocity);
+      SmartDashboard.putNumber("moduleAngle " + module, moduleAngle);
       SmartDashboard.putNumber("turnPosition " + module, turnEncoder.getPosition());
       SmartDashboard.putNumber("turn180Angle " + module, getTurn180Angle());
+      SmartDashboard.putNumber("optimizedAngle " + module, optimizedModuleOutput[0]);
+      SmartDashboard.putNumber("optimizedVelocity "+ module, optimizedModuleOutput[1]);
 
-    double driveOutput = moduleVelocity;
+
+    double driveOutput = optimizedModuleOutput[1];
     driveMotor.setVoltage(driveOutput);
       SmartDashboard.putNumber("driveOutput" + module, driveOutput);
 
-    double turnOutput = MathUtil.clamp(turnPIDController.calculate(getTurn180Angle(), moduleAngle), -12, 12);
+    double turnOutput = MathUtil.clamp(turnPIDController.calculate(getTurn180Angle(), optimizedModuleOutput[0]), -0.4, 0.4);
     turnMotor.set(turnOutput);
       SmartDashboard.putNumber("turnOutput " + module, turnOutput);
       SmartDashboard.putNumber("getTurn180Angle " + module, getTurn180Angle());
@@ -116,16 +120,20 @@ public class SwerveModule {
    */
   public double[] glacierOptimized(double desiredModuleAngle, double currentModuleAngle, double moduleVelocity) {
     double optimized[] = new double[2];
-    if (Math.abs(desiredModuleAngle - currentModuleAngle) > 90) {
-        optimized[1] = -moduleVelocity;
-        optimized[0] = desiredModuleAngle + 180;
-    }
-    else if (currentModuleAngle <= 90 && currentModuleAngle >= -90 && currentModuleAngle - desiredModuleAngle >= 90) {
-
-    }
-
-    optimized[0] = 1;
-    optimized[1] = 1;
+      if (Math.abs(desiredModuleAngle - currentModuleAngle) > 90 && Math.abs(desiredModuleAngle) + Math.abs(currentModuleAngle) < 270) {
+        if (desiredModuleAngle >= 0) {
+            optimized[0] = desiredModuleAngle - 180;
+            optimized[1] = moduleVelocity * -1;
+        }
+        else if (desiredModuleAngle <= 0){
+          optimized[0] = desiredModuleAngle + 180;
+          optimized[1] = moduleVelocity * -1;
+        }
+      }
+      else {
+        optimized[0] = desiredModuleAngle;
+        optimized[1] = moduleVelocity;
+      }
     return optimized;
   }
   
@@ -156,10 +164,10 @@ public class SwerveModule {
    * @return Angle of the module converted to a range between -180 degrees and 180 degrees
    */
   public double getTurn180Angle() {
-    if (turnEncoder.getPosition() > 360) {
+    if (turnEncoder.getPosition()*23.684 > 360) {
       turnEncoder180 = ((turnEncoder.getPosition()*23.684) % 360) - 180;
     }
-    else if (turnEncoder.getPosition() < 0) {
+    else if (turnEncoder.getPosition()*23.684 < 0) {
       turnEncoder180 = ((turnEncoder.getPosition()*23.684) % 360) + 180;
     }
     else {
