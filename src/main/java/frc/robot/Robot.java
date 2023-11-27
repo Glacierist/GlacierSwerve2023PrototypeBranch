@@ -88,8 +88,13 @@ public class Robot extends TimedRobot {
     double xSpeed = 0;
     double ySpeed = 0;
     double yaw = 0;
-
-    if (Math.sqrt(Math.pow(swerveController.getLeftX(), 2) + Math.pow(swerveController.getLeftY(), 2)) > Constants.swerveControllerLeftStickDeadband) {
+    boolean aboveDeadband = false;
+ 
+    /* Converts the cartesian X and Y axes of the left stick of the swerve controller to the polar coordinate "r" */
+    /* This is the distance from (0, 0) to the cartesian coordinate of the left stick output */
+    /* If this absolute "r" value is less than the left stick deadband (set in Constants), the xSpeed and ySpeed are not calculated */
+    if (Math.abs(Math.sqrt(Math.pow(swerveController.getLeftX(), 2) + Math.pow(swerveController.getLeftY(), 2))) > Constants.swerveControllerLeftStickDeadband) {
+      aboveDeadband = true;
       if (fieldRelative == true) {
         ySpeed = (swerveController.getLeftY() * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees())) - (-1 * swerveController.getLeftX()) * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
         xSpeed = (swerveController.getLeftY() * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees())) + (-1 * swerveController.getLeftX()) * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
@@ -99,7 +104,15 @@ public class Robot extends TimedRobot {
         xSpeed = -1 * swerveController.getLeftY();
       }
     }
-    yaw = -m_rotLimiter.calculate(MathUtil.applyDeadband(swerveController.getRightX(), Constants.swerveControllerRightXDeadband)) * Drivetrain.kMaxAngularSpeed;
+    else {
+      if (aboveDeadband == true) {
+        aboveDeadband = false;
+        ySpeed = 0.1;
+      }
+      ySpeed = 0;
+      xSpeed = 0;
+    }
+    yaw = -1 * m_rotLimiter.calculate(MathUtil.applyDeadband(swerveController.getRightX(), Constants.swerveControllerRightXDeadband)) * Drivetrain.kMaxAngularSpeed;
 
     SmartDashboard.putNumber("xSpeed ", xSpeed);
     SmartDashboard.putNumber("ySpeed ", ySpeed);
