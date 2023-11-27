@@ -84,34 +84,27 @@ public class Robot extends TimedRobot {
     teleopStarted = false;
   }
 
-
-  /* DO NOT ATTEMPT TO CHANGE SWERVE CODE; INVERTING A SINGLE VALUE SCREWS WITH EVERYTHING (IDK HOW) */
-  /* Wanna change the x and y axes? Or invert the one of the drive directions? Good luck!!! (pain) */
   private void driveWithJoystick(boolean fieldRelative) {
-    // Get the x speed. We are inverting this because Xbox controllers return
-    // negative values when we push forward. 
-    final var xSpeed =
-        m_xspeedLimiter.calculate(MathUtil.applyDeadband(-swerveController.getLeftY(), Constants.controllerLeftXDeadband))
-            * Drivetrain.kMaxVoltage;
-            SmartDashboard.putNumber("xSpeed ", xSpeed);
+    double xSpeed = 0;
+    double ySpeed = 0;
+    double yaw = 0;
 
-    // Get the y speed or sideways/strafe speed. We are inverting this because
-    // we want a positive value when we pull to the left. Xbox controllers
-    // return positive values when you pull to the right by default. 
-    final var ySpeed =
-        m_yspeedLimiter.calculate(MathUtil.applyDeadband(swerveController.getLeftX(), Constants.controllerLeftYDeadband))
-            * Drivetrain.kMaxVoltage;
-            SmartDashboard.putNumber("ySpeed ", ySpeed);
+    if (Math.sqrt(Math.pow(swerveController.getLeftX(), 2) + Math.pow(swerveController.getLeftY(), 2)) > Constants.swerveControllerLeftStickDeadband) {
+      if (fieldRelative == true) {
+        ySpeed = (swerveController.getLeftY() * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees())) - (-1 * swerveController.getLeftX()) * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
+        xSpeed = (swerveController.getLeftY() * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees())) + (-1 * swerveController.getLeftX()) * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
+      }
+      else {
+        ySpeed = -1 * swerveController.getLeftX();
+        xSpeed = -1 * swerveController.getLeftY();
+      }
+    }
+    yaw = -m_rotLimiter.calculate(MathUtil.applyDeadband(swerveController.getRightX(), Constants.swerveControllerRightXDeadband)) * Drivetrain.kMaxAngularSpeed;
 
-    // Get the rate of angular rotation. We are inverting this because we want a
-    // positive value when we pull to the left (remember, CCW is positive in
-    // mathematics). Xbox controllers return positive values when you pull to
-    // the right by default.
-    final var yaw =
-        -m_rotLimiter.calculate(MathUtil.applyDeadband(swerveController.getRightX(), Constants.controllerRightXDeadband))
-            * Drivetrain.kMaxAngularSpeed;
-            SmartDashboard.putNumber("yaw ", yaw);
-
-    m_swerve.drive(-xSpeed, -ySpeed, yaw, fieldRelative);
+    SmartDashboard.putNumber("xSpeed ", xSpeed);
+    SmartDashboard.putNumber("ySpeed ", ySpeed);
+    SmartDashboard.putNumber("yaw ", yaw);
+    m_swerve.drive(xSpeed, ySpeed, yaw);
+    
   }
 }

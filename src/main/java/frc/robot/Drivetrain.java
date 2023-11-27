@@ -81,7 +81,7 @@ public class Drivetrain {
    * @param rot Angular rate of the robot.
    * @param fieldRelative Whether the provided x and y speeds are relative to the field.
    */
-  public void drive(double xSpeed, double ySpeed, double yaw, boolean fieldRelative) {
+  public void drive(double xSpeed, double ySpeed, double yaw) {
 
     // var swerveModuleStates = m_kinematics.toSwerveModuleStates(
     //         fieldRelative
