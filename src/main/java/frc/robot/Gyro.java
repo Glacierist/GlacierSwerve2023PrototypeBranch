@@ -21,17 +21,8 @@ public class Gyro {
 
   /** Creates a new Gyro. */
   public Gyro(double offset) {
-    
     /* Create a gyro */
-    try {
-      m_gyro = new ADIS16470_IMU();
-    } 
-    catch (RuntimeException ex) {
-        System.out.println("--------------");
-        System.out.println("NavX not plugged in");
-        System.out.println("--------------");
-    } 
-    gyroAngleOffset = offset;
+    m_gyro = new ADIS16470_IMU();
   }
 
   /* Returns the total angle (goes past 360) */
@@ -58,15 +49,6 @@ public class Gyro {
     m_gyro.calibrate();
   }
 
-  // public boolean isCalibrating() {
-  //   if (m_gyro.isCalibrating() == true) {
-  //     return true;
-  //   }
-  //   else {
-  //     return false;
-  //   }
-  // }
-  
   /* Sets the gyro offset angle */
   /* If the gyro thinks right is forward, then the adjustment should be 90 */
   /* If the gyro thinks left is forward, then the adjustment should be -90 */ 
@@ -75,6 +57,11 @@ public class Gyro {
     gyroAngleOffset = adjustment;
   }
 
+
+  /* - - - BELOW THIS IS OLD CODE - - - */
+  /* Cannot be easily recreated due to the lack of features in the current gyro */
+  /* The previous gyro contained methods for velocity and position which are not avaliable with the new gyro */
+  
   // public double getVelocityY() {
   //   double velocityY = -m_gyro.getVelocityX();
   //   SmartDashboard.putNumber("Gyro Velocity Y", velocityY);

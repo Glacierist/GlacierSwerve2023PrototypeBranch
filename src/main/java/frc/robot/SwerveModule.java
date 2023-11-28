@@ -23,26 +23,13 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class SwerveModule {
-  private static final int kEncoderResolution = 1;
-
-  private static final double kModuleMaxAngularVelocity = Drivetrain.kMaxAngularSpeed;
-  private static final double kModuleMaxAngularAcceleration = 2 * Math.PI; // radians per second squared
-
   private final CANSparkMax driveMotor;
   private final CANSparkMax turnMotor;
 
   public RelativeEncoder driveEncoder;
   public RelativeEncoder turnEncoder;
 
-  // Gains are for example purposes only - must be determined for your own robot!
-  // private final PIDController drivePIDController = new PIDController(0.025, 0, 0);
-
-  // Gains are for example purposes only - must be determined for your own robot!
   private final PIDController turnPIDController = new PIDController(0.006, 0.000, 0.00001);
-      
-  // Gains are for example purposes only - must be determined for your own robot!
-  // private final SimpleMotorFeedforward driveFeedForward = new SimpleMotorFeedforward(0.55493, 2.3014, 0.51488);
-  // private final SimpleMotorFeedforward driveFeedForward = new SimpleMotorFeedforward(0, 2.3014, 0.51488);
 
   private double turnEncoder180;
   
@@ -57,28 +44,15 @@ public class SwerveModule {
 
     driveEncoder = driveMotor.getEncoder();
     turnEncoder = turnMotor.getEncoder();
-    // unmodified_turningEncoder = m_turningMotor.getEncoder();
-    // m_turningEncoder = unmodified_turningEncoder.getPosition()*Math.toRadians((1/360)*(1/15.2));
 
     driveEncoder.setPosition(0);
     turnEncoder.setPosition(0);
 
-    // Set the distance per pulse for the drive encoder. We can simply use the
-    // distance traveled for one rotation of the wheel divided by the encoder
-    // resolution.
     driveEncoder.setPositionConversionFactor(Constants.driveEncoderPositionConversion);
     turnEncoder.setPositionConversionFactor(Constants.turnEncoderPositionConversion);
 
     
-
-    // Set the distance (in this case, angle) in radians per pulse for the turning encoder.
-    // This is the the angle through an entire rotation (2 * pi) divided by the
-    // encoder resolution.
-    // m_turningEncoder.setDistancePerPulse(2 * Math.PI / kEncoderResolution);
-
-    
-    // Limit the PID Controller's input range between -pi and pi and set the input
-    // to be continuous.
+    /* Instead of continuing above or below the max or min input, the min and max values are treated as the same */
     turnPIDController.enableContinuousInput(-180,  180);
   }
 
@@ -107,8 +81,6 @@ public class SwerveModule {
     double turnOutput = MathUtil.clamp(turnPIDController.calculate(getTurn180Angle(), optimizedModuleOutput[0]), -0.4, 0.4);
     turnMotor.set(turnOutput);
       // SmartDashboard.putNumber("turnOutput " + module, turnOutput);
-      // SmartDashboard.putNumber("getTurn180Angle " + module, getTurn180Angle());
-
   }
 
   /**
@@ -144,7 +116,7 @@ public class SwerveModule {
    */
   public SwerveModuleState getState() {
     return new SwerveModuleState(
-        driveEncoder.getVelocity(), new Rotation2d(turnEncoder.getPosition()*23.684));
+        driveEncoder.getVelocity(), new Rotation2d(turnEncoder.getPosition()*Constants.turnEncoderPositionConversion));
   }
 
   /**
@@ -154,8 +126,7 @@ public class SwerveModule {
    */
   public SwerveModulePosition getPosition() {
     return new SwerveModulePosition(
-        driveEncoder.getPosition(), new Rotation2d(turnEncoder.getPosition()*23.684));
-
+        driveEncoder.getPosition(), new Rotation2d(turnEncoder.getPosition()*Constants.turnEncoderPositionConversion));
   }
 
   /**
@@ -164,14 +135,14 @@ public class SwerveModule {
    * @return Angle of the module converted to a range between -180 degrees and 180 degrees
    */
   public double getTurn180Angle() {
-    if (turnEncoder.getPosition()*23.684 > 360) {
-      turnEncoder180 = ((turnEncoder.getPosition()*23.684) % 360) - 180;
+    if (turnEncoder.getPosition()*Constants.turnEncoderPositionConversion > 360) {
+      turnEncoder180 = ((turnEncoder.getPosition()*Constants.turnEncoderPositionConversion) % 360) - 180;
     }
-    else if (turnEncoder.getPosition()*23.684 < 0) {
-      turnEncoder180 = ((turnEncoder.getPosition()*23.684) % 360) + 180;
+    else if (turnEncoder.getPosition()*Constants.turnEncoderPositionConversion < 0) {
+      turnEncoder180 = ((turnEncoder.getPosition()*Constants.turnEncoderPositionConversion) % 360) + 180;
     }
     else {
-      turnEncoder180 = (turnEncoder.getPosition()*23.684) - 180;
+      turnEncoder180 = (turnEncoder.getPosition()*Constants.turnEncoderPositionConversion) - 180;
     }
     return turnEncoder180;
   }

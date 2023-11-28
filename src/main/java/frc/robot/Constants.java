@@ -29,14 +29,16 @@ public final class Constants {
     public static final double backLeftOffset = 0;
     public static final double backRightoffset = 0;
 
-    public static final double driveEncoderVelocityConversion = (1/5.33);
+    public static final double driveEncoderVelocityConversion = 1;
     public static final double driveEncoderPositionConversion = 1;
-    public static final double turnEncoderPositionConversion = 1;
+    public static final double turnEncoderPositionConversion = 23.684;
 
     public static final double drivetrainModuleOffset = 0.2923; /* Assuming the robot is square, the X & Y offset from the center of rotation to each module */
     public static final int numberOfModules = 4;
-    public static final double maxVelocityMultiplier = 6; /* Max velocity in m/s */
-    public static final double radiansPerSecondMultiplier = 6; /* Max angular rate in radians/second */
+
+    public static final double drivetrainMaxVelocity = 0.35; // meters/second (m/s)
+    public static final double drivetrainMaxVoltage = drivetrainMaxVelocity / (((473 / 9.25) * 0.103 * Math.PI) / 60); /* THIS CANNOT GO OVER 12 VOLTS */
+    public static final double drivetrainMaxYawVoltage = 8; /* THIS CANNOT GO OVER 12 VOLTS */
 
     /* - - - OTHER CONSTANTS - - - */
     public static final int swerveControllerPort = 0;
