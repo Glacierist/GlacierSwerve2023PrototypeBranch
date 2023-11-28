@@ -42,9 +42,8 @@ public final class Constants {
     public static final int swerveControllerPort = 0;
     public static final int alternateControllerPort = 1;
 
-    public static final double controllerLeftXDeadband = 0.1;
-    public static final double controllerLeftYDeadband = 0.1;
-    public static final double controllerRightXDeadband = 0.1;
+    public static final double swerveControllerLeftStickDeadband = 0.1;
+    public static final double swerveControllerRightXDeadband = 0.1;
 
     public static final double xSlewRateLimiter = 5;
     public static final double ySlewRateLimiter = 5;

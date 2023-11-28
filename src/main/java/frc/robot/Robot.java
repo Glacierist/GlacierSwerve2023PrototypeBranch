@@ -4,28 +4,55 @@
 
 package frc.robot;
 
+import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.SPI;
 
 public class Robot extends TimedRobot {
-  private final XboxController m_controller = new XboxController(Constants.swerveControllerPort);
-  private final Drivetrain m_swerve = new Drivetrain();
+  public static Drivetrain m_swerve;
+  public static Gyro m_gyro;
 
+  private static XboxController swerveController;
+  private static XboxController alternateController;
+  
   // Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-  private final SlewRateLimiter m_xspeedLimiter = new SlewRateLimiter(Constants.xSlewRateLimiter);
-  private final SlewRateLimiter m_yspeedLimiter = new SlewRateLimiter(Constants.ySlewRateLimiter);
-  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(Constants.yawSlewRateLimiter);
+  private static SlewRateLimiter m_xspeedLimiter;
+  private static SlewRateLimiter m_yspeedLimiter;
+  private static SlewRateLimiter m_rotLimiter;
+
+  private boolean teleopStarted;
 
   @Override
   public void robotInit() {
-    m_swerve.resetModules();
+    m_gyro = new Gyro(90);
+    m_swerve = new Drivetrain();
 
+    swerveController = new XboxController(Constants.swerveControllerPort);
+    alternateController = new XboxController(Constants.alternateControllerPort);
+
+    m_xspeedLimiter = new SlewRateLimiter(Constants.xSlewRateLimiter);
+    m_yspeedLimiter = new SlewRateLimiter(Constants.ySlewRateLimiter);
+    m_rotLimiter = new SlewRateLimiter(Constants.yawSlewRateLimiter);
+
+    teleopStarted = false;
   }
 
+  @Override
+  public void autonomousInit() {
+    teleopStarted = false;
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+    m_swerve.updateOdometry();
+  }
   
   public void teleopInit() {
     // This makes sure that the autonomous stops running when
@@ -34,54 +61,67 @@ public class Robot extends TimedRobot {
     // this line or comment it out.
     // if (m_autonomousCommand != null) {
     //   m_autonomousCommand.cancel();
-  }
-  
-  @Override
-  public void autonomousPeriodic() {
-    m_swerve.updateOdometry();
+    teleopStarted = false;
+
   }
 
-  boolean started = false;
+  boolean fieldRelative = false;
   @Override
   public void teleopPeriodic() {
-    if (m_controller.getBackButton() == true) {
-      m_swerve.resetModules();
+    if (swerveController.getBackButtonPressed() == true) {
+      fieldRelative = !fieldRelative;
     }
-    if (m_controller.getStartButton() == true) {
-      started = true;
+    if (swerveController.getStartButton() == true) {
+      teleopStarted = true;
     }
-    if (started == true) {
-      driveWithJoystick(false);
+    if (teleopStarted == true) {
+      driveWithJoystick(fieldRelative);
     }
+    if (swerveController.getAButtonPressed() == true) {
+      m_gyro.calibrateGyro();
+    }
+    SmartDashboard.putBoolean("Field Relative", fieldRelative);
   }
 
-  /* DO NOT ATTEMPT TO CHANGE SWERVE CODE; INVERTING A SINGLE VALUE SCREWS WITH EVERYTHING (IDK HOW) */
-  /* Wanna change the x and y axes? Or invert the one of the drive directions? Good luck!!! (pain) */
+  public void disabledInit() {
+    teleopStarted = false;
+  }
+
   private void driveWithJoystick(boolean fieldRelative) {
-    // Get the x speed. We are inverting this because Xbox controllers return
-    // negative values when we push forward. 
-    final var xSpeed =
-        m_xspeedLimiter.calculate(MathUtil.applyDeadband(-m_controller.getLeftY(), Constants.controllerLeftXDeadband))
-            * Drivetrain.kMaxSpeed;
-            SmartDashboard.putNumber("xSpeed ", xSpeed);
+    double xSpeed = 0;
+    double ySpeed = 0;
+    double yaw = 0;
+    boolean aboveDeadband = false;
+ 
+    /* Converts the cartesian X and Y axes of the left stick of the swerve controller to the polar coordinate "r" */
+    /* This is the distance from (0, 0) to the cartesian coordinate of the left stick output */
+    /* If this absolute "r" value is less than the left stick deadband (set in Constants), the xSpeed and ySpeed are not calculated */
+    if (Math.abs(Math.sqrt(Math.pow(swerveController.getLeftX(), 2) + Math.pow(swerveController.getLeftY(), 2))) > Constants.swerveControllerLeftStickDeadband) {
+      aboveDeadband = true;
+      if (fieldRelative == true) {
+        ySpeed = -1 * (m_yspeedLimiter.calculate(swerveController.getLeftY() * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees())) - (-1 * swerveController.getLeftX()) * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage);
+        xSpeed = m_xspeedLimiter.calculate(swerveController.getLeftY() * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees())) + (-1 * swerveController.getLeftX()) * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
+      }
+      else {
+        ySpeed = -1 * m_yspeedLimiter.calculate(swerveController.getLeftX()) * Drivetrain.kMaxVoltage;
+        xSpeed = m_xspeedLimiter.calculate(swerveController.getLeftY()) * Drivetrain.kMaxVoltage;
+      }
+    }
+    else {
+      if (aboveDeadband == true) {
+        aboveDeadband = false;
+        ySpeed = 0.1;
+      }
+      ySpeed = 0;
+      xSpeed = 0;
+    }
+    yaw = -1 * m_rotLimiter.calculate(MathUtil.applyDeadband(swerveController.getRightX(), Constants.swerveControllerRightXDeadband)) * Drivetrain.kMaxAngularSpeed;
 
-    // Get the y speed or sideways/strafe speed. We are inverting this because
-    // we want a positive value when we pull to the left. Xbox controllers
-    // return positive values when you pull to the right by default. 
-    final var ySpeed =
-        m_yspeedLimiter.calculate(MathUtil.applyDeadband(m_controller.getLeftX(), Constants.controllerLeftYDeadband))
-            * Drivetrain.kMaxSpeed;
-            SmartDashboard.putNumber("ySpeed ", ySpeed);
+    SmartDashboard.putNumber("xSpeed ", xSpeed);
+    SmartDashboard.putNumber("ySpeed ", ySpeed);
+    SmartDashboard.putNumber("yaw ", yaw);
+    SmartDashboard.putNumber("gyro angle ", m_gyro.getTotalAngleDegrees());
 
-    // Get the rate of angular rotation. We are inverting this because we want a
-    // positive value when we pull to the left (remember, CCW is positive in
-    // mathematics). Xbox controllers return positive values when you pull to
-    // the right by default.
-    final var yaw =
-        -m_rotLimiter.calculate(MathUtil.applyDeadband(m_controller.getRightX(), Constants.controllerRightXDeadband))
-            * Drivetrain.kMaxAngularSpeed;
-            SmartDashboard.putNumber("yaw ", yaw);
-
-    m_swerve.drive(-xSpeed, -ySpeed, yaw, fieldRelative);
+    m_swerve.drive(xSpeed, ySpeed, yaw);
   }
 }
