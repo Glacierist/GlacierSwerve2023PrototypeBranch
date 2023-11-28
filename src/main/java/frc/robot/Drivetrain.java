@@ -22,7 +22,7 @@ import frc.robot.Constants;
 
 /** Represents a swerve drive style drivetrain. */
 public class Drivetrain {
-  public static final double kMaxVelocity = 2.2; // meters/second (m/s)
+  public static final double kMaxVelocity = 0.35; // meters/second (m/s)
   public static final double kMaxVoltage = kMaxVelocity / (((473 / 9.25) * 0.103 * Math.PI) / 60); /* THIS CANNOT GO OVER 12 VOLTS */
   public static final double kMaxAngularSpeed = 2 * Math.PI; // 1/2 rotation per second
 
@@ -39,7 +39,7 @@ public class Drivetrain {
   private final SwerveDriveKinematics m_kinematics;
   private final SwerveDriveOdometry m_odometry;
 
-  public static Gyro m_gyro;
+  public Gyro m_gyro;
 
   public Drivetrain() {
     m_gyro = Robot.m_gyro;
@@ -63,7 +63,7 @@ public class Drivetrain {
     m_odometry = 
       new SwerveDriveOdometry(
         m_kinematics, 
-        Rotation2d.fromDegrees(m_gyro.get180AngleDegrees()), 
+        Rotation2d.fromDegrees(m_gyro.getTotalAngleDegrees()), 
         new SwerveModulePosition[] {
         m_frontLeft.getPosition(),
         m_frontRight.getPosition(),

@@ -31,8 +31,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    m_swerve = new Drivetrain();
     m_gyro = new Gyro(90);
+    m_swerve = new Drivetrain();
 
     swerveController = new XboxController(Constants.swerveControllerPort);
     alternateController = new XboxController(Constants.alternateControllerPort);
@@ -40,8 +40,6 @@ public class Robot extends TimedRobot {
     m_xspeedLimiter = new SlewRateLimiter(Constants.xSlewRateLimiter);
     m_yspeedLimiter = new SlewRateLimiter(Constants.ySlewRateLimiter);
     m_rotLimiter = new SlewRateLimiter(Constants.yawSlewRateLimiter);
-
-    m_gyro.calibrateGyro();
 
     teleopStarted = false;
   }
@@ -67,17 +65,22 @@ public class Robot extends TimedRobot {
 
   }
 
+  boolean fieldRelative = false;
   @Override
   public void teleopPeriodic() {
-    if (swerveController.getBackButton() == true) {
-      m_swerve.resetModules();
+    if (swerveController.getBackButtonPressed() == true) {
+      fieldRelative = !fieldRelative;
     }
     if (swerveController.getStartButton() == true) {
       teleopStarted = true;
     }
     if (teleopStarted == true) {
-      driveWithJoystick(false);
+      driveWithJoystick(fieldRelative);
     }
+    if (swerveController.getAButtonPressed() == true) {
+      m_gyro.calibrateGyro();
+    }
+    SmartDashboard.putBoolean("Field Relative", fieldRelative);
   }
 
   public void disabledInit() {
@@ -96,12 +99,12 @@ public class Robot extends TimedRobot {
     if (Math.abs(Math.sqrt(Math.pow(swerveController.getLeftX(), 2) + Math.pow(swerveController.getLeftY(), 2))) > Constants.swerveControllerLeftStickDeadband) {
       aboveDeadband = true;
       if (fieldRelative == true) {
-        ySpeed = (swerveController.getLeftY() * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees())) - (-1 * swerveController.getLeftX()) * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
-        xSpeed = (swerveController.getLeftY() * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees())) + (-1 * swerveController.getLeftX()) * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
+        ySpeed = -1 * (m_yspeedLimiter.calculate(swerveController.getLeftY() * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees())) - (-1 * swerveController.getLeftX()) * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage);
+        xSpeed = m_xspeedLimiter.calculate(swerveController.getLeftY() * Math.sin(Math.toRadians(m_gyro.getTotalAngleDegrees())) + (-1 * swerveController.getLeftX()) * Math.cos(Math.toRadians(m_gyro.getTotalAngleDegrees()))) * Drivetrain.kMaxVoltage;
       }
       else {
-        ySpeed = -1 * swerveController.getLeftX();
-        xSpeed = -1 * swerveController.getLeftY();
+        ySpeed = -1 * m_yspeedLimiter.calculate(swerveController.getLeftX()) * Drivetrain.kMaxVoltage;
+        xSpeed = m_xspeedLimiter.calculate(swerveController.getLeftY()) * Drivetrain.kMaxVoltage;
       }
     }
     else {
@@ -117,7 +120,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("xSpeed ", xSpeed);
     SmartDashboard.putNumber("ySpeed ", ySpeed);
     SmartDashboard.putNumber("yaw ", yaw);
+    SmartDashboard.putNumber("gyro angle ", m_gyro.getTotalAngleDegrees());
+
     m_swerve.drive(xSpeed, ySpeed, yaw);
-    
   }
 }

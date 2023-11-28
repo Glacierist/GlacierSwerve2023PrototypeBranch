@@ -4,87 +4,88 @@
 
 package frc.robot;
 
-import com.kauailabs.navx.frc.AHRS;
+import com.kauailabs.navx.frc.*;
+
+import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
 public class Gyro {
-  private AHRS gyro;
+  // private AHRS m_gyro;
   private Drivetrain drivetrain;
+  public static ADIS16470_IMU m_gyro;
+  private double gyroAngleOffset = 0;
+
 
   /** Creates a new Gyro. */
   public Gyro(double offset) {
     
     /* Create a gyro */
     try {
-      gyro = new AHRS(SPI.Port.kMXP); 
-      gyro.reset();
+      m_gyro = new ADIS16470_IMU();
     } 
     catch (RuntimeException ex) {
         System.out.println("--------------");
         System.out.println("NavX not plugged in");
         System.out.println("--------------");
     } 
-
-    gyro.setAngleAdjustment(offset);
+    gyroAngleOffset = offset;
   }
 
   /* Returns the total angle (goes past 360) */
   /* ANGLE ADJUSTMENT DOES EFFECT THIS VALUE */
   public double getTotalAngleDegrees() {
-    return gyro.getAngle();
+    return m_gyro.getAngle() + gyroAngleOffset;
   }
 
   /* Returns an angle from -180 to 180 */
   /* ANGLE ADJUSTMENT DOES NOT EFFECT THIS VALUE */
   /* Can use gyro.zeroYaw() to offset the value */
-  public double get180AngleDegrees() {
-    return gyro.getYaw();
-  }
+  // public double get180AngleDegrees() {
+  //   return m_gyro.getYaw();
+  // }
   
   /* Resets gyro angle*/
   public void resetGyroYaw() {
-    gyro.reset();
-    gyro.zeroYaw();
+    m_gyro.reset();
   }
 
   /* Calibrates the gyro */
   /* ROBOT MUST BE STILL WHILE CALIBRATING */
   public void calibrateGyro() {
-    gyro.calibrate();
-    System.out.println("- - - DO NOT MOVE ROBOT - - -");
+    m_gyro.calibrate();
   }
 
-  public boolean isCalibrating() {
-    if (gyro.isCalibrating() == true) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
+  // public boolean isCalibrating() {
+  //   if (m_gyro.isCalibrating() == true) {
+  //     return true;
+  //   }
+  //   else {
+  //     return false;
+  //   }
+  // }
   
   /* Sets the gyro offset angle */
   /* If the gyro thinks right is forward, then the adjustment should be 90 */
   /* If the gyro thinks left is forward, then the adjustment should be -90 */ 
   /* If the gyro thinks backward is forward, then the adjustment should be 180 */ 
   public void setGyroAngleOffset(double adjustment) {
-    gyro.setAngleAdjustment(adjustment);
+    gyroAngleOffset = adjustment;
   }
 
-  public double getVelocityY() {
-    double velocityY = -gyro.getVelocityX();
-    SmartDashboard.putNumber("Gyro Velocity Y", velocityY);
-    return velocityY;
-  }
+  // public double getVelocityY() {
+  //   double velocityY = -m_gyro.getVelocityX();
+  //   SmartDashboard.putNumber("Gyro Velocity Y", velocityY);
+  //   return velocityY;
+  // }
 
-  public double getVelocityX() {
-    double velocityX = gyro.getVelocityY();
-    SmartDashboard.putNumber("Gyro Velocity X", velocityX);
-    return velocityX;
-  }
+  // public double getVelocityX() {
+  //   double velocityX = m_gyro.getVelocityY();
+  //   SmartDashboard.putNumber("Gyro Velocity X", velocityX);
+  //   return velocityX;
+  // }
 
   // public double getAveragedVelocityY() {
   //   double averagedVelocityY = (getVelocityX() + swerveDrive.chassisYVelocity()) / 2;
